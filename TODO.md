@@ -1,0 +1,2 @@
+- [ ] Remove Lovable branding from index.html meta tags
+- [ ] Rewrite README.md to remove Lovable branding and make it generic

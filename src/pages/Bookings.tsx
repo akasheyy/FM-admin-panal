@@ -20,7 +20,7 @@ export default function Bookings() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Load bookings
+  // Fetch bookings
   const fetchBookings = async () => {
     try {
       const res = await API.get("/contact");
@@ -61,30 +61,39 @@ export default function Bookings() {
       <div className="p-6 space-y-6">
         <h1 className="text-2xl font-semibold">Bookings</h1>
 
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted">
+        {/* TABLE */}
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="min-w-[1100px] w-full text-sm">
+            <thead className="bg-muted/50">
               <tr>
                 <th className="p-3 text-left">Name</th>
                 <th className="p-3 text-left">Phone</th>
                 <th className="p-3 text-left">Event</th>
-                <th className="p-3 text-left">Guests</th>
                 <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Guests</th>
+                <th className="p-3 text-left">Place</th>
+                <th className="p-3 text-left">Message</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {bookings.map((b) => (
-                <tr key={b._id} className="border-t">
-                  <td className="p-3">{b.name}</td>
+                <tr
+                  key={b._id}
+                  className="border-t hover:bg-muted/30 transition"
+                >
+                  <td className="p-3 font-medium">{b.name}</td>
                   <td className="p-3">{b.phone}</td>
                   <td className="p-3 capitalize">{b.eventType}</td>
-                  <td className="p-3">{b.guests}</td>
                   <td className="p-3">
                     {new Date(b.createdAt).toDateString()}
                   </td>
-
+                  <td className="p-3">{b.guests}</td>
+                  <td className="p-3">{b.place || "-"}</td>
+                  <td className="p-3 max-w-[260px] truncate">
+                    {b.message || "-"}
+                  </td>
                   <td className="p-3 text-right">
                     <Button
                       variant="destructive"
@@ -99,7 +108,10 @@ export default function Bookings() {
 
               {bookings.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                  <td
+                    colSpan={8}
+                    className="p-6 text-center text-muted-foreground"
+                  >
                     No bookings found
                   </td>
                 </tr>

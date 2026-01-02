@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
-import { Users, Images, Eye, TrendingUp } from "lucide-react";
+import { 
+  Users, Images, MessageSquare, BookOpen, 
+  ArrowUpRight, Clock
+} from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { StatCard } from "@/components/StatCard";
 import API from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const [galleryCount, setGalleryCount] = useState(0);
-  const [menuCount, setMenuCount] = useState(0);
-  const [contactCount, setContactCount] = useState(0);
-  const [testimonialCount, setTestimonialCount] = useState(0);
-  const [latestActivity, setLatestActivity] = useState([]);
-  const [userName, setUserName] = useState("Admin");
+  const [data, setData] = useState({
+    gallery: 0,
+    menu: 0,
+    contact: 0,
+    testimonials: 0,
+    activity: []
+  });
+  const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch all data in parallel
       const [galleryRes, menuRes, contactRes, testimonialRes] = await Promise.all([
         API.get("/gallery"),
         API.get("/menu"),
@@ -23,191 +26,152 @@ const Dashboard = () => {
         API.get("/testimonials"),
       ]);
 
-      const gallery = galleryRes.data;
-      const sortedGallery = [...gallery].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      const sortedGallery = [...galleryRes.data].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      setGalleryCount(gallery.length);
-      setMenuCount(menuRes.data.length);
-      setContactCount(contactRes.data.length);
-      setTestimonialCount(testimonialRes.data.length);
-
-      // Dynamic recent activity (latest 5 uploads)
-      setLatestActivity(
-        sortedGallery.slice(0, 5).map((img) => ({
-          action: "Image uploaded",
+      setData({
+        gallery: galleryRes.data.length,
+        menu: menuRes.data.length,
+        contact: contactRes.data.length,
+        testimonials: testimonialRes.data.length,
+        activity: sortedGallery.slice(0, 5).map((img) => ({
+          action: "New Gallery Upload",
           user: "Admin",
-          time: new Date(img.createdAt).toLocaleString(),
+          time: new Date(img.createdAt).toLocaleDateString(),
         }))
-      );
+      });
     } catch (err) {
       toast({
-        title: "Error loading dashboard",
-        description: "Backend connection failed",
+        title: "Connection Error",
+        description: "Failed to sync with the server.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
-
-    // You can decode username from token later
-    setUserName("Admin");
   }, []);
 
   const stats = [
-    {
-      title: "Gallery Images",
-      value: galleryCount,
-      change: "+ Real-time",
-      changeType: "positive" as const,
-      icon: Images,
-      iconColor: "bg-success/10 text-success",
-    },
-    {
-      title: "Menu Items",
-      value: menuCount,
-      change: "+ Updated",
-      changeType: "positive" as const,
-      icon: TrendingUp,
-      iconColor: "bg-primary/10 text-primary",
-    },
-    {
-      title: "Contact Messages",
-      value: contactCount,
-      change: "Inbox",
-      changeType: "positive" as const,
-      icon: Eye,
-      iconColor: "bg-info/10 text-info",
-    },
-    {
-      title: "Testimonials",
-      value: testimonialCount,
-      change: "Customer reviews",
-      changeType: "positive" as const,
-      icon: Users,
-      iconColor: "bg-warning/10 text-warning",
-    },
+    { title: "Gallery", value: data.gallery, icon: Images, color: "text-blue-600", bg: "bg-blue-50" },
+    { title: "Menu", value: data.menu, icon: BookOpen, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { title: "Inquiries", value: data.contact, icon: MessageSquare, color: "text-violet-600", bg: "bg-violet-50" },
+    { title: "Reviews", value: data.testimonials, icon: Users, color: "text-amber-600", bg: "bg-amber-50" },
   ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 sm:space-y-8">
-
-        {/* Header */}
-        <div className="animate-fade-in">
-          <h1 className="text-2xl font-semibold sm:text-3xl">
-            Dashboard
+      <div className="max-w-[1600px] mx-auto space-y-10 p-4 md:p-8">
+        
+        {/* Simplified Header */}
+        <header className="border-b border-slate-200 pb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
+            Overview
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-            Welcome back, {userName}! Here is your site activity.
+          <p className="text-slate-500 mt-2 text-lg">
+            Real-time status of your platform assets and activity.
           </p>
-        </div>
+        </header>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat, index) => (
-            <div
-              key={stat.title}
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 75}ms` }}
-            >
-              <StatCard {...stat} />
+        {/* High-Impact Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, i) => (
+            <div key={i} className="group relative rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div className={`rounded-2xl p-4 ${stat.bg} ${stat.color}`}>
+                  <stat.icon size={28} />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                    <ArrowUpRight size={14} className="mr-1" /> ACTIVE
+                  </span>
+                </div>
+              </div>
+              <div className="mt-6">
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{stat.title}</p>
+                <p className="text-4xl font-black text-slate-900 mt-1">{data[stat.title.toLowerCase() as keyof typeof data] || stat.value}</p>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Content Grid */}
-        <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-
-          {/* Recent Activity */}
-          <div className="animate-fade-in rounded-xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold sm:text-lg">
-              Recent Activity
-            </h2>
-
-            {latestActivity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recent activity</p>
-            ) : (
-              <div className="space-y-3">
-                {latestActivity.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {item.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        by {item.user}
-                      </p>
-                    </div>
-                    <span className="ml-4 text-xs text-muted-foreground">
-                      {item.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Overview */}
-          <div className="animate-fade-in rounded-xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold sm:text-lg">
-              Quick Overview
-            </h2>
-
-            <div className="space-y-5">
-
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Images Uploaded</span>
-                  <span className="text-sm font-medium">{galleryCount}</span>
-                </div>
-                <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className="h-2 bg-primary"
-                    style={{ width: `${Math.min(galleryCount, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Menu Items</span>
-                  <span className="text-sm font-medium">{menuCount}</span>
-                </div>
-                <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className="h-2 bg-success"
-                    style={{ width: `${Math.min(menuCount, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Messages</span>
-                  <span className="text-sm font-medium">{contactCount}</span>
-                </div>
-                <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className="h-2 bg-info"
-                    style={{ width: `${Math.min(contactCount, 100)}%` }}
-                  />
-                </div>
-              </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Recent Activity Timeline */}
+          <section className="lg:col-span-2 rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                <Clock size={22} className="text-indigo-500" />
+                Latest Updates
+              </h2>
             </div>
-          </div>
+            <div className="p-8">
+              {data.activity.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 italic bg-slate-50 rounded-2xl">
+                  Waiting for new activity...
+                </div>
+              ) : (
+                <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[11px] before:h-full before:w-0.5 before:bg-slate-100">
+                  {data.activity.map((item, index) => (
+                    <div key={index} className="relative flex items-start gap-6 group">
+                      <div className="z-10 mt-1.5 h-[24px] w-[24px] rounded-full border-4 border-white bg-indigo-600 shadow-md group-hover:scale-110 transition-transform" />
+                      <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                          <p className="text-base font-bold text-slate-800">{item.action}</p>
+                          <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{item.time}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-1 font-medium">Verified by system administrator</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Visualization Section */}
+          <section className="rounded-3xl bg-slate-900 p-8 text-white shadow-2xl flex flex-col justify-between">
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-xs font-black text-indigo-400 uppercase tracking-[0.2em]">Usage Analytics</h2>
+                <p className="text-slate-400 text-sm mt-1 font-medium">Resource distribution across modules.</p>
+              </div>
+              
+              <div className="space-y-8">
+                <AssetProgress label="Gallery Space" current={data.gallery} max={100} color="bg-blue-500" />
+                <AssetProgress label="Menu Capacity" current={data.menu} max={50} color="bg-emerald-500" />
+                <AssetProgress label="Inquiry Volume" current={data.contact} max={30} color="bg-violet-500" />
+              </div>
+            </div>
+
+            <div className="mt-12 p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
+              <p className="text-xs font-bold text-indigo-300 uppercase tracking-tighter">System Health: 100%</p>
+            </div>
+          </section>
 
         </div>
       </div>
     </DashboardLayout>
   );
 };
+
+const AssetProgress = ({ label, current, max, color }: { label: string, current: number, max: number, color: string }) => (
+  <div className="space-y-3">
+    <div className="flex justify-between items-end">
+      <span className="text-sm font-bold text-slate-200">{label}</span>
+      <span className="text-xs font-black text-white/40">{Math.round((current/max)*100)}%</span>
+    </div>
+    <div className="h-3 w-full rounded-full bg-white/10 overflow-hidden">
+      <div 
+        className={`h-full transition-all duration-1000 ease-out ${color} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} 
+        style={{ width: `${Math.min((current / max) * 100, 100)}%` }} 
+      />
+    </div>
+  </div>
+);
 
 export default Dashboard;

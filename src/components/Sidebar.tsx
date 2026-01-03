@@ -1,23 +1,23 @@
+import { useEffect, useState } from "react";
 import { 
   LayoutDashboard, 
   Images, 
   LogOut, 
-  Settings, 
   X,
-  CalendarCheck   // <-- Booking Icon
+  CalendarCheck
 } from "lucide-react";
 
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import API from "@/lib/api";
+
+/* ================= NAV ITEMS ================= */
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Images, label: "Gallery", path: "/gallery" },
-
-  // ⭐ NEW — BOOKINGS LINK
   { icon: CalendarCheck, label: "Bookings", path: "/bookings" },
-
 ];
 
 interface SidebarProps {
@@ -27,20 +27,39 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
+  const [newBookingCount, setNewBookingCount] = useState(0);
 
- const handleLogout = () => {
-  localStorage.removeItem("token");
-  navigate("/login");
-};
+  /* ================= FETCH NEW BOOKINGS ================= */
+  const fetchNewBookings = async () => {
+    try {
+      const res = await API.get("/contact");
+      const newOnes = res.data.filter((b: any) => b.isNew);
+      setNewBookingCount(newOnes.length);
+    } catch {
+      // silent fail (sidebar shouldn't break)
+    }
+  };
+
+  useEffect(() => {
+    fetchNewBookings();
+
+    // 🔄 Optional auto refresh every 30s
+    const interval = setInterval(fetchNewBookings, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   const handleNavClick = () => {
     if (onClose) onClose();
   };
 
-
   return (
     <>
-      {/* Mobile overlay */}
+      {/* MOBILE OVERLAY */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
@@ -48,62 +67,83 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* SIDEBAR */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-screen w-[260px] bg-sidebar transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed left-0 top-0 z-50 h-screen w-[260px] bg-sidebar transition-transform duration-300 lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Header */}
-          <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-5">
+
+          {/* HEADER */}
+          <div className="flex h-16 items-center justify-between border-b px-5">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <span className="text-base font-bold text-primary-foreground">A</span>
+                <span className="font-bold text-primary-foreground">A</span>
               </div>
-              <span className="text-base font-semibold text-sidebar-foreground">
-                Admin Panel
-              </span>
+              <span className="font-semibold">Admin Panel</span>
             </div>
+
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
+              className="lg:hidden"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={handleNavClick}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                  )
-                }
-              >
-                <item.icon className="h-[18px] w-[18px]" />
-                {item.label}
-              </NavLink>
-            ))}
+          {/* NAVIGATION */}
+          <nav className="flex-1 space-y-1 px-3 py-4">
+            {navItems.map((item) => {
+              const isBooking = item.path === "/bookings";
+
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={handleNavClick}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    )
+                  }
+                >
+                  {/* ICON + INDICATOR */}
+                  <div className="relative">
+                    <item.icon className="h-[18px] w-[18px]" />
+
+                    {/* 🔔 NEW BOOKING DOT */}
+                    {isBooking && newBookingCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-sidebar" />
+                    )}
+                  </div>
+
+                  {/* LABEL */}
+                  <span className="flex-1">{item.label}</span>
+
+                  {/* 🔢 OPTIONAL COUNT BADGE */}
+                  {isBooking && newBookingCount > 0 && (
+                    <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
+                      {newBookingCount}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
           </nav>
 
-          {/* User Section */}
-          <div className="border-t border-sidebar-border p-4">
+          {/* FOOTER */}
+          <div className="border-t p-4">
             <Button
               variant="ghost"
               onClick={handleLogout}
-              className="w-full justify-start gap-3 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="w-full justify-start gap-3"
             >
               <LogOut className="h-[18px] w-[18px]" />
               Sign out

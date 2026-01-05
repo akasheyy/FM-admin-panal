@@ -20,8 +20,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Gallery = () => {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // ✅ NEW: title state
+  const [title, setTitle] = useState("");
 
   // Delete dialog
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -59,10 +62,15 @@ const Gallery = () => {
 
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("caption", title); // ✅ SEND TITLE
 
     try {
       await API.post("/gallery", formData);
       toast({ title: "Image uploaded successfully!" });
+
+      setTitle(""); // ✅ reset title
+      event.target.value = ""; // reset file input
+
       fetchImages();
     } catch (err: any) {
       toast({
@@ -82,7 +90,7 @@ const Gallery = () => {
     try {
       await API.delete(`/gallery/${id}`);
       toast({ title: "Image deleted" });
-      setImages((prev: any) => prev.filter((img: any) => img._id !== id));
+      setImages((prev) => prev.filter((img) => img._id !== id));
     } catch {
       toast({
         title: "Delete failed",
@@ -102,7 +110,15 @@ const Gallery = () => {
           </p>
         </div>
 
-        {/* --- UPLOAD ZONE ONLY (Button Removed) --- */}
+        {/* ✅ TITLE INPUT */}
+        <Input
+          placeholder="Enter image title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="max-w-md"
+        />
+
+        {/* FILE INPUT */}
         <input
           id="gallery-upload"
           type="file"
@@ -111,6 +127,7 @@ const Gallery = () => {
           disabled={uploading}
         />
 
+        {/* UPLOAD ZONE */}
         <label
           htmlFor="gallery-upload"
           className="block cursor-pointer rounded-xl border-2 border-dashed border-border bg-card p-6 text-center hover:border-primary/50 hover:bg-muted/30 sm:p-8"
@@ -122,8 +139,6 @@ const Gallery = () => {
           <h3 className="text-lg font-medium">
             {uploading ? "Uploading..." : "Drop images here or tap to upload"}
           </h3>
-
-          <p className="text-sm text-muted-foreground"></p>
         </label>
 
         {/* SEARCH & FILTER */}
@@ -132,11 +147,6 @@ const Gallery = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search images..." className="h-10 pl-10" />
           </div>
-
-          <Button variant="outline" className="h-10 gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
         </div>
 
         {/* IMAGE GRID */}
@@ -146,7 +156,7 @@ const Gallery = () => {
               No images found. Upload your first image!
             </p>
           ) : (
-            images.map((img: any, i: number) => (
+            images.map((img, i) => (
               <div
                 key={img._id}
                 className="animate-fade-in"

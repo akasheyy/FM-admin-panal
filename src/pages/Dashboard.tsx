@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Users,
   Images,
   MessageSquare,
-  BookOpen,
   ArrowUpRight,
   Clock,
 } from "lucide-react";
@@ -17,22 +15,17 @@ const Dashboard = () => {
 
   const [data, setData] = useState({
     gallery: 0,
-    menu: 0,
     contact: [],
-    testimonials: 0,
     activity: [],
   });
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
-      const [galleryRes, menuRes, contactRes, testimonialRes] =
-        await Promise.all([
-          API.get("/gallery"),
-          API.get("/menu"),
-          API.get("/contact"),
-          API.get("/testimonials"),
-        ]);
+      const [galleryRes, contactRes] = await Promise.all([
+        API.get("/gallery"),
+        API.get("/contact"),
+      ]);
 
       const sortedGallery = [...galleryRes.data].sort(
         (a, b) =>
@@ -42,9 +35,7 @@ const Dashboard = () => {
 
       setData({
         gallery: galleryRes.data.length,
-        menu: menuRes.data.length,
         contact: contactRes.data,
-        testimonials: testimonialRes.data.length,
         activity: sortedGallery.slice(0, 5).map((img) => ({
           action: "New Gallery Upload",
           user: "Admin",
@@ -70,32 +61,18 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: "Gallery",
+      title: "Gallery Assets",
       value: data.gallery,
       icon: Images,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
-      title: "Menu",
-      value: data.menu,
-      icon: BookOpen,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-    },
-    {
-      title: "Inquiries",
+      title: "Total Inquiries",
       value: data.contact.length,
       icon: MessageSquare,
       color: "text-violet-600",
       bg: "bg-violet-50",
-    },
-    {
-      title: "Reviews",
-      value: data.testimonials,
-      icon: Users,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
     },
   ];
 
@@ -112,8 +89,8 @@ const Dashboard = () => {
           </p>
         </header>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* STATS - Reduced to 2 columns for a better look */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {stats.map((stat, i) => (
             <div
               key={i}
@@ -153,12 +130,12 @@ const Dashboard = () => {
             <div className="p-8">
               {data.activity.length === 0 ? (
                 <div className="py-12 text-center text-slate-400 italic bg-slate-50 rounded-2xl">
-                  Waiting for new activity...
+                  Waiting for new gallery activity...
                 </div>
               ) : (
                 data.activity.map((item, index) => (
-                  <div key={index} className="mb-6">
-                    <p className="font-semibold">{item.action}</p>
+                  <div key={index} className="mb-6 last:mb-0">
+                    <p className="font-semibold text-slate-700">{item.action}</p>
                     <p className="text-xs text-slate-400">{item.time}</p>
                   </div>
                 ))
@@ -166,7 +143,7 @@ const Dashboard = () => {
             </div>
           </section>
 
-          {/* 🔔 NEW BOOKING REQUESTS (CLICKABLE) */}
+          {/* NEW BOOKING REQUESTS */}
           <section
             onClick={() =>
               newBookings.length > 0 && navigate("/Bookings")
@@ -188,30 +165,32 @@ const Dashboard = () => {
               </div>
 
               {newBookings.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 italic bg-slate-50 rounded-2xl">
+                <div className="py-12 text-center text-slate-500 italic bg-white/5 rounded-2xl border border-white/5">
                   No new booking requests
                 </div>
               ) : (
-                newBookings.slice(0, 5).map((booking: any) => (
-                  <div
-                    key={booking._id}
-                    className="p-4 rounded-2xl bg-white/5 border border-white/10"
-                  >
-                    <div className="flex justify-between mb-2">
-                      <span className="font-bold">{booking.name}</span>
-                      <span className="text-xs bg-indigo-500/20 px-2 py-1 rounded-full">
-                        {booking.eventType}
-                      </span>
+                <div className="space-y-4">
+                  {newBookings.slice(0, 5).map((booking: any) => (
+                    <div
+                      key={booking._id}
+                      className="p-4 rounded-2xl bg-white/5 border border-white/10"
+                    >
+                      <div className="flex justify-between mb-2">
+                        <span className="font-bold">{booking.name}</span>
+                        <span className="text-[10px] bg-indigo-500/20 px-2 py-1 rounded-full uppercase font-bold">
+                          {booking.eventType}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-300">
+                        {booking.phone} • {booking.guests} guests
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-300">
-                      {booking.phone} • {booking.guests} guests
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
 
-            <div className="mt-10 text-center">
+            <div className="mt-10 pt-6 border-t border-white/5 text-center">
               <p className="text-xs font-bold text-indigo-300 uppercase">
                 Total New: {newBookings.length}
               </p>

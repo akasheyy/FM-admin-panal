@@ -4,15 +4,13 @@ import {
   Images, 
   LogOut, 
   X,
-  CalendarCheck
+  CalendarCheck,
+  User
 } from "lucide-react";
-
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import API from "@/lib/api";
-
-/* ================= NAV ITEMS ================= */
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -29,21 +27,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const [newBookingCount, setNewBookingCount] = useState(0);
 
-  /* ================= FETCH NEW BOOKINGS ================= */
   const fetchNewBookings = async () => {
     try {
       const res = await API.get("/contact");
       const newOnes = res.data.filter((b: any) => b.isNew);
       setNewBookingCount(newOnes.length);
-    } catch {
-      // silent fail (sidebar shouldn't break)
-    }
+    } catch { /* silent fail */ }
   };
 
   useEffect(() => {
     fetchNewBookings();
-
-    // 🔄 Optional auto refresh every 30s
     const interval = setInterval(fetchNewBookings, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -53,16 +46,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     navigate("/login");
   };
 
-  const handleNavClick = () => {
-    if (onClose) onClose();
-  };
-
   return (
     <>
       {/* MOBILE OVERLAY */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
@@ -70,67 +59,57 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* SIDEBAR */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-screen w-[260px] bg-sidebar transition-transform duration-300 lg:translate-x-0",
+          "fixed left-0 top-0 z-50 h-screen w-[270px] border-r bg-background transition-transform duration-300 ease-in-out lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-full flex-col">
-
-          {/* HEADER */}
-          <div className="flex h-16 items-center justify-between border-b px-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <span className="font-bold text-primary-foreground">A</span>
-              </div>
-              <span className="font-semibold">Admin Panel</span>
+          
+          {/* BRANDING */}
+          <div className="flex h-16 items-center gap-3 px-6">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-foreground text-background">
+              <span className="text-sm font-black">A</span>
             </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
+            <span className="text-sm font-bold tracking-tight">STUDIO ADMIN</span>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="ml-auto lg:hidden" 
               onClick={onClose}
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* NAVIGATION */}
+          {/* NAV LINKS */}
           <nav className="flex-1 space-y-1 px-3 py-4">
             {navItems.map((item) => {
               const isBooking = item.path === "/bookings";
-
+              
               return (
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  onClick={handleNavClick}
+                  onClick={() => onClose?.()}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
+                      "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                     )
                   }
                 >
-                  {/* ICON + INDICATOR */}
-                  <div className="relative">
-                    <item.icon className="h-[18px] w-[18px]" />
-
-                    {/* 🔔 NEW BOOKING DOT */}
-                    {isBooking && newBookingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-sidebar" />
-                    )}
-                  </div>
-
-                  {/* LABEL */}
+                  <item.icon className="h-4 w-4" />
                   <span className="flex-1">{item.label}</span>
-
-                  {/* 🔢 OPTIONAL COUNT BADGE */}
+                  
                   {isBooking && newBookingCount > 0 && (
-                    <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">
-                      {newBookingCount}
+                    <span className="relative flex h-5 w-5 items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-20"></span>
+                      <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {newBookingCount}
+                      </span>
                     </span>
                   )}
                 </NavLink>
@@ -138,17 +117,28 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             })}
           </nav>
 
-          {/* FOOTER */}
-          <div className="border-t p-4">
+          {/* USER & LOGOUT SECTION */}
+          <div className="mt-auto border-t p-4">
+            <div className="flex items-center gap-3 px-2 pb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="flex flex-col overflow-hidden text-xs">
+                <span className="truncate font-semibold text-foreground">Administrator</span>
+                <span className="truncate text-muted-foreground">Active Session</span>
+              </div>
+            </div>
+
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={handleLogout}
-              className="w-full justify-start gap-3"
+              className="w-full justify-start gap-2 border-dashed text-muted-foreground hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20"
             >
-              <LogOut className="h-[18px] w-[18px]" />
+              <LogOut className="h-4 w-4" />
               Sign out
             </Button>
           </div>
+
         </div>
       </aside>
     </>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Upload, Search, Filter } from "lucide-react";
+import { Upload, Search } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ImageCard } from "@/components/ImageCard";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,11 @@ const Gallery = () => {
   const [images, setImages] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // ✅ NEW: title state
+  // Title for upload
   const [title, setTitle] = useState("");
+
+  // ✅ Search state
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Delete dialog
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -62,14 +65,14 @@ const Gallery = () => {
 
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("caption", title); // ✅ SEND TITLE
+    formData.append("caption", title);
 
     try {
       await API.post("/gallery", formData);
       toast({ title: "Image uploaded successfully!" });
 
-      setTitle(""); // ✅ reset title
-      event.target.value = ""; // reset file input
+      setTitle("");
+      event.target.value = "";
 
       fetchImages();
     } catch (err: any) {
@@ -99,6 +102,11 @@ const Gallery = () => {
     }
   };
 
+  // ✅ Filtered images (search logic)
+  const filteredImages = images.filter((img) =>
+    img.caption?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-6 sm:space-y-8">
@@ -110,7 +118,7 @@ const Gallery = () => {
           </p>
         </div>
 
-        {/* ✅ TITLE INPUT */}
+        {/* TITLE INPUT */}
         <Input
           placeholder="Enter image title"
           value={title}
@@ -141,22 +149,27 @@ const Gallery = () => {
           </h3>
         </label>
 
-        {/* SEARCH & FILTER */}
+        {/* SEARCH */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center animate-fade-in">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search images..." className="h-10 pl-10" />
+            <Input
+              placeholder="Search images..."
+              className="h-10 pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
         {/* IMAGE GRID */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-in">
-          {images.length === 0 ? (
+          {filteredImages.length === 0 ? (
             <p className="col-span-full py-10 text-center text-muted-foreground">
-              No images found. Upload your first image!
+              No images found.
             </p>
           ) : (
-            images.map((img, i) => (
+            filteredImages.map((img, i) => (
               <div
                 key={img._id}
                 className="animate-fade-in"
@@ -187,7 +200,6 @@ const Gallery = () => {
 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-
             <AlertDialogAction
               onClick={() => {
                 deleteImage(selectedId);
